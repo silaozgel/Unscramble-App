@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "421006105712",
+    "project_id": "gameapp-55af5",
+    "storage_bucket": "gameapp-55af5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:421006105712:android:d426728e4473d8b38328b5",
+        "android_client_info": {
+          "package_name": "com.unscramble.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAc7BdAtT-82toMlKZWF3msSmAOX1msyZA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
