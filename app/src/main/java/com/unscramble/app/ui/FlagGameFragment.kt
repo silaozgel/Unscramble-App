@@ -11,6 +11,7 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.unscramble.app.databinding.FragmentFlagGameBinding
 import com.unscramble.app.viewmodel.FlagGameViewModel
@@ -37,8 +38,15 @@ class FlagGameFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.uiState.collect { uiState ->
                 if (uiState.isGameOver) {
-                    updateHighScore(uiState.score)
-                    showFinalScoreDialog(uiState.score)
+
+                    // KAZANMA STRATEJİSİ: Canı kaldıysa VEYA 20. (son) seviyeyi görerek bitirdiyse kazanmış sayılır
+                    val isGameWon = uiState.lives > 0 || uiState.currentLevel >= 20
+
+                    if (isGameWon) {
+                        saveScoreToFirebase(uiState.score)
+                    }
+
+                    showFinalScoreDialog(uiState.score, isGameWon)
                 } else {
                     // Bayrak resmini günceller
                     if (uiState.currentFlagResId != 0) {
@@ -51,6 +59,7 @@ class FlagGameFragment : Fragment() {
                 }
             }
         }
+
         binding.btnSubmit.setOnClickListener {
             val guess = binding.etGuess.text.toString()
             val correctAnswer = viewModel.uiState.value.currentCountryName
@@ -123,10 +132,14 @@ class FlagGameFragment : Fragment() {
         }
     }
 
-    private fun showFinalScoreDialog(score: Int) {
+    private fun showFinalScoreDialog(score: Int, isGameWon: Boolean) {
+        // Dialog başlığı ve mesajı oyunun kazanılma durumuna göre dinamik belirlenir
+        val title = if (isGameWon) "Tebrikler! Oyunu Bitirdiniz!" else "Canınız Bitti!"
+        val message = if (isGameWon) "Harika iş çıkardınız. Skorunuz ($score) toplam puanınıza eklendi!" else "Oyun bitti. Puan kazanamadınız."
+
         AlertDialog.Builder(requireContext())
-            .setTitle(if (viewModel.uiState.value.lives == 0) "Canınız Bitti!" else "Tebrikler!")
-            .setMessage("Oyun bitti. Skorunuz: $score")
+            .setTitle(title)
+            .setMessage(message)
             .setCancelable(false)
             .setPositiveButton("Yeniden Oyna") { _, _ ->
                 viewModel.resetGame()
@@ -138,19 +151,15 @@ class FlagGameFragment : Fragment() {
             .show()
     }
 
-    private fun updateHighScore(newScore: Int) {
-        val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
+    private fun saveScoreToFirebase(earnedPoints: Int) {
+        val auth = FirebaseAuth.getInstance()
         val db = FirebaseFirestore.getInstance()
-        val userRef = db.collection("Users").document(userId)
+        val userId = auth.currentUser?.uid ?: return
 
-        userRef.get().addOnSuccessListener { document ->
-            if (document != null && document.exists()) {
-                // Diğer oyunun skoruyla karışmaması için 'flagScore' alanını kullanıyoruz
-                val currentHighScore = document.getLong("flagScore")?.toInt() ?: 0
-                if (newScore > currentHighScore) {
-                    userRef.update("flagScore", newScore)
-                }
-            }
+        // Kazanılan puanı ana "score" alanının üzerine ekler
+        if (earnedPoints > 0) {
+            db.collection("Users").document(userId)
+                .update("score", FieldValue.increment(earnedPoints.toLong()))
         }
     }
 
