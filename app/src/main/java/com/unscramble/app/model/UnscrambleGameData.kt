@@ -1,6 +1,6 @@
 package com.unscramble.app.model
 
-object GameData {
+object UnscrambleGameData {
     val wordsTr = mapOf(
         "kolay" to listOf("kedi", "köpek", "makam", "mevlüt", "ağaç", "balık", "sabun", "forma", "kek", "kapı",
             "yorgun", "akran", "dergi", "masa", "mavi", "hakem", "ekmek", "bal", "tablo", "cimri"),

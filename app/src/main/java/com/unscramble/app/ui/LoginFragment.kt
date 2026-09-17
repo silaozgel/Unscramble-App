@@ -4,7 +4,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import com.unscramble.app.R
@@ -44,7 +43,7 @@ class LoginFragment : Fragment() {
 
             var isValid = true
 
-            // E-posta Doğrulama (Regex ile uzantı kontrolü)
+            // E-posta doğrulama
             // Sadece gmail.com, hotmail.com vb uzantılarına izin verir
             val emailPattern = "^[A-Za-z0-9+_.-]+@(gmail\\.com|hotmail\\.com|outlook\\.com|yahoo\\.com|yandex\\.com)$"
             if (!email.matches(Regex(emailPattern))) {
@@ -52,7 +51,7 @@ class LoginFragment : Fragment() {
                 isValid = false
             }
 
-            // Şifre Doğrulama (En az 6 karakter)
+            // Şifre doğrulama (En az 6 karakter)
             if (password.length < 6) {
                 binding.passwordLayout.error = "Şifre en az 6 karakter olmalıdır"
                 isValid = false
@@ -60,12 +59,20 @@ class LoginFragment : Fragment() {
 
             // Eğer formatlar doğruysa Firebase ile girişi dener
             if (isValid) {
+                // İşlem başlarken butonu kilitler (spam tıklamalarda uygulama çöküyordu bu şekilde düzeltildi)
+                binding.btnLogin.isEnabled = false
+
                 auth.signInWithEmailAndPassword(email, password)
                     .addOnCompleteListener { task ->
                         if (task.isSuccessful) {
-                            findNavController().navigate(R.id.action_loginFragment_to_homeFragment)
+                            // Navigasyon çökmesini önlemek için: Sadece hala Login ekranındaysak geçiş yapar
+                            if (findNavController().currentDestination?.id == R.id.loginFragment) {
+                                findNavController().navigate(R.id.action_loginFragment_to_homeFragment)
+                            }
                         } else {
-                            // Firebase'den dönen hataya göre ilgili alanda uyarı gösterir
+                            // Hata olduysa butonu tekrar aktif et ki kullanıcı tekrar deneyebilsin
+                            binding.btnLogin.isEnabled = true
+
                             val exception = task.exception
                             when (exception) {
                                 is com.google.firebase.auth.FirebaseAuthInvalidUserException -> {

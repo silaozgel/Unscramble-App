@@ -31,15 +31,13 @@ class HomeFragment : Fragment() {
         // Şimdilik listeyi manuel dolduruyoruz
         val gameList = listOf(
             Game(1, "Unscramble", "Karışık harflerden doğru kelimeyi bul, puanları topla!"),
-
-            // İleride başka oyunlar eklenecek
+            Game(2, "Bayrak Bulmaca", "Ülke bayraklarını tahmin et, coğrafya bilgini sına!")
         )
 
-        // Adapter'ı başlatıp tıklama olayını tanımlar
         val adapter = GameAdapter(gameList) { selectedGame ->
-            if (selectedGame.id == 1) {
-                // Unscramble seçildiyse oyun ekranına yönlendirir
-                findNavController().navigate(R.id.action_homeFragment_to_gameFragment)
+            when (selectedGame.id) {
+                1 -> findNavController().navigate(R.id.action_homeFragment_to_UnscrambleGameFragment)
+                2 -> findNavController().navigate(R.id.action_homeFragment_to_flagGameFragment)
             }
         }
 

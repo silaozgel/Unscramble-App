@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
+import com.unscramble.app.R
 import com.unscramble.app.databinding.FragmentRegisterBinding
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -68,6 +69,10 @@ class RegisterFragment : Fragment() {
 
             // Eğer formatlar doğruysa Firebase ile kayıt işlemini başlatır
             if (isValid) {
+
+                // spam tıklamaları önler
+                binding.btnRegister.isEnabled = false
+
                 auth.createUserWithEmailAndPassword(email, password)
                     .addOnCompleteListener { task ->
                         if (task.isSuccessful) {
@@ -84,19 +89,28 @@ class RegisterFragment : Fragment() {
                                 firestore.collection("Users").document(uid)
                                     .set(userMap)
                                     .addOnSuccessListener {
-                                        // Başarılı kayıt sonrası Giriş ekranına döner
-                                        findNavController().popBackStack()
+                                        // Sadece sayfa hala açıksa geri döner
+                                        if (findNavController().currentDestination?.id == R.id.registerFragment) {
+                                            // Başarılı kayıt sonrası Giriş ekranına döner
+                                            findNavController().popBackStack()
+                                        }
                                     }
                                     .addOnFailureListener { e ->
-                                        // Veritabanı bağlantı hataları için Toast kullanılabilir
-                                        android.widget.Toast.makeText(requireContext(), "Veritabanı Hatası: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+                                        // İşlem başarısız olursa butonu tekrar aktifleştir
+                                        binding.btnRegister.isEnabled = true
+
+                                        if (isAdded) {
+                                            Toast.makeText(requireContext(), "Veritabanı Hatası: ${e.message}", Toast.LENGTH_SHORT).show()
+                                        }
                                     }
                             }
                         } else {
-                            // Firebase Kayıt Hataları
+                            // Kayıt kısmında hata olursa butonu tekrar aktifleştir
+                            binding.btnRegister.isEnabled = true
+
                             val exception = task.exception
                             when (exception) {
-                                // E-posta zaten veritabanında kayıtlıysa
+                                // E-posta zaten veritabanında kayıtlıysa:
                                 is com.google.firebase.auth.FirebaseAuthUserCollisionException -> {
                                     binding.emailLayout.error = "Bu e-posta adresi zaten kullanımda"
                                 }
@@ -111,7 +125,10 @@ class RegisterFragment : Fragment() {
 
         // Zaten hesabım var yazısına tıklanınca Login ekranına döner
         binding.tvGoToLogin.setOnClickListener {
-            findNavController().popBackStack()
+            // Spam tıklamalarda uygulama çökmemesi adına eklendi
+            if (findNavController().currentDestination?.id == R.id.registerFragment) {
+                findNavController().popBackStack()
+            }
         }
     }
 

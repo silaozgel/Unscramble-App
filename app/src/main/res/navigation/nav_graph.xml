@@ -32,9 +32,20 @@
         android:label="Ana Sayfa"
         tools:layout="@layout/fragment_home" >
         <action
-            android:id="@+id/action_homeFragment_to_gameFragment"
-            app:destination="@id/gameFragment" />
+            android:id="@+id/action_homeFragment_to_UnscrambleGameFragment"
+            app:destination="@id/UnscrambleGameFragment" />
+        <!-- Bayrak oyunu için geçiş kısmı -->
+        <action
+            android:id="@+id/action_homeFragment_to_flagGameFragment"
+            app:destination="@id/flagGameFragment" />
     </fragment>
+
+    <!-- Bayrak oyunu fragmentı -->
+    <fragment
+        android:id="@+id/flagGameFragment"
+        android:name="com.unscramble.app.ui.FlagGameFragment"
+        android:label="Bayrak Bulma"
+        tools:layout="@layout/fragment_flag_game" />
 
     <fragment
         android:id="@+id/profileFragment"
@@ -43,9 +54,9 @@
         tools:layout="@layout/fragment_profile" />
 
     <fragment
-        android:id="@+id/gameFragment"
-        android:name="com.unscramble.app.ui.GameFragment"
+        android:id="@+id/UnscrambleGameFragment"
+        android:name="com.unscramble.app.ui.UnscrambleGameFragment"
         android:label="Unscramble"
-        tools:layout="@layout/fragment_game" />
+        tools:layout="@layout/fragment_unscramble_game" />
 
 </navigation>

@@ -50,7 +50,7 @@ class ProfileFragment : Fragment() {
 
         // Çıkış Yap Butonu Tıklaması
         binding.btnLogout.setOnClickListener {
-            auth.signOut() // Firebase oturumunu kapat
+            auth.signOut() // Firebase oturumunu kapatır
 
             // Geri tuşuyla tekrar profile dönmemek için:
             val navOptions = NavOptions.Builder()
@@ -72,22 +72,27 @@ class ProfileFragment : Fragment() {
             firestore.collection("Users").document(userId)
                 .get()
                 .addOnSuccessListener { document ->
+                    // Kullanıcı hala bu sayfadaysa UI güncellenir
+                    // Profil sayfası olası bugları önlemek adına:
+                    if (isAdded && _binding != null) {
+                        // Veri geldiğinde ProgressBar'ı gizler, yazıları gösterir
+                        binding.progressBarProfile.visibility = View.GONE
+                        binding.tvProfileUsername.visibility = View.VISIBLE
+                        binding.tvProfileScore.visibility = View.VISIBLE
 
-                    // Veri geldiğinde ProgressBar'ı gizler, yazıları gösterir
-                    binding.progressBarProfile.visibility = View.GONE
-                    binding.tvProfileUsername.visibility = View.VISIBLE
-                    binding.tvProfileScore.visibility = View.VISIBLE
-
-                    if (document != null && document.exists()) {
-                        val user = document.toObject(User::class.java)
-                        binding.tvProfileUsername.text = user?.username ?: "Bilinmeyen Kullanıcı"
-                        binding.tvProfileScore.text = "En Yüksek Skor: ${user?.score ?: 0}"
+                        if (document != null && document.exists()) {
+                            val user = document.toObject(User::class.java)
+                            binding.tvProfileUsername.text = user?.username ?: "Bilinmeyen Kullanıcı"
+                            binding.tvProfileScore.text = "En Yüksek Skor: ${user?.score ?: 0}"
+                        }
                     }
                 }
                 .addOnFailureListener {
-                    // Hata olursa animasyonu gizler
-                    binding.progressBarProfile.visibility = View.GONE
-                    Toast.makeText(requireContext(), "Kullanıcı bilgileri alınamadı.", Toast.LENGTH_SHORT).show()
+                    if (isAdded && _binding != null) {
+                        // Hata olursa animasyonu gizler
+                        binding.progressBarProfile.visibility = View.GONE
+                        Toast.makeText(requireContext(), "Kullanıcı bilgileri alınamadı.", Toast.LENGTH_SHORT).show()
+                    }
                 }
         }
     }
@@ -99,16 +104,21 @@ class ProfileFragment : Fragment() {
             .limit(10) // Sadece ilk 10 kişiyi alır
             .get()
             .addOnSuccessListener { result ->
-                val leaderboardList = mutableListOf<User>()
-                for (document in result) {
-                    val user = document.toObject(User::class.java)
-                    leaderboardList.add(user)
+                if (isAdded && _binding != null) {
+                    val leaderboardList = mutableListOf<User>()
+                    for (document in result) {
+                        val user = document.toObject(User::class.java)
+                        leaderboardList.add(user)
+                    }
+                    // Listeyi adaptöre gönderir ve RecyclerView'a bağlar
+                    binding.recyclerViewLeaderboard.adapter = LeaderboardAdapter(leaderboardList)
                 }
-                // Listeyi adaptöre gönderir ve RecyclerView'a bağlar
-                binding.recyclerViewLeaderboard.adapter = LeaderboardAdapter(leaderboardList)
             }
             .addOnFailureListener {
-                Toast.makeText(requireContext(), "Sıralama listesi alınamadı.", Toast.LENGTH_SHORT).show()
+                // requireContext() kullanımı sayfadan çıkınca çökmeye neden oluyordu, onu engellemek adına yapıldı
+                if (isAdded && _binding != null) {
+                    Toast.makeText(requireContext(), "Sıralama listesi alınamadı.", Toast.LENGTH_SHORT).show()
+                }
             }
     }
 

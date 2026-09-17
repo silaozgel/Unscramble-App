@@ -1,11 +1,12 @@
 package com.unscramble.app.viewmodel
 
 import androidx.lifecycle.ViewModel
-import com.unscramble.app.model.GameData
+import com.unscramble.app.model.UnscrambleGameData
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import java.util.Locale
 
 data class GameUiState(
     val currentScrambledWord: String = "",
@@ -17,7 +18,7 @@ data class GameUiState(
     val isEnglish: Boolean = false
 )
 
-class GameViewModel : ViewModel() {
+class UnscrambleGameViewModel : ViewModel() {
 
     private val _uiState = MutableStateFlow(GameUiState())
     val uiState: StateFlow<GameUiState> = _uiState.asStateFlow()
@@ -31,9 +32,8 @@ class GameViewModel : ViewModel() {
     }
 
     private fun pickRandomWordAndShuffle(): String {
-        val wordListMap = if (_uiState.value.isEnglish) GameData.wordsEn else GameData.wordsTr
+        val wordListMap = if (_uiState.value.isEnglish) UnscrambleGameData.wordsEn else UnscrambleGameData.wordsTr
 
-        // 1-7 Kolay, 8-14 Orta, 15-20 Zor
         val difficultyKey = when (_uiState.value.currentWordCount) {
             in 1..7 -> "kolay"
             in 8..14 -> "orta"
@@ -79,18 +79,43 @@ class GameViewModel : ViewModel() {
         }
     }
 
+    private fun normalizeText(text: String): String {
+        val localeTr = Locale("tr", "TR")
+        return text.lowercase(localeTr)
+            .replace("ç", "c")
+            .replace("ğ", "g")
+            .replace("ı", "i")
+            .replace("ö", "o")
+            .replace("ş", "s")
+            .replace("ü", "u")
+    }
     fun checkUserGuess(userGuess: String): Boolean {
-        if (userGuess.equals(currentWord, ignoreCase = true)) {
-            val points = when (_uiState.value.difficulty) {
-                "Kolay" -> 10
-                "Orta" -> 20
-                "Zor" -> 30
-                else -> 10
-            }
+        // Kullanıcının yazdığını ve ekrandaki doğru kelimeyi İngilizce karakterlere indirgeyip küçültüyoruz
+        val guess = normalizeText(userGuess.trim())
+        val answer = normalizeText(currentWord)
+
+        if (guess == answer) {
+
+            val points = 10
+
             updateGameState(points)
             return true
+        } else {
+            // Yanlış tahmin durumu
+            val currentLives = _uiState.value.lives - 1
+
+            if (currentLives <= 0) {
+                // Can bittiyse oyunu bitirir
+                _uiState.update { currentState ->
+                    currentState.copy(lives = 0, isGameOver = true)
+                }
+            } else {
+                _uiState.update { currentState ->
+                    currentState.copy(lives = currentLives)
+                }
+            }
+            return false
         }
-        return false
     }
 
     fun skipWord() {
@@ -105,6 +130,12 @@ class GameViewModel : ViewModel() {
                 currentState.copy(lives = currentLives)
             }
             updateGameState(0) // Skor artmaz, sadece kelime değişir
+        }
+    }
+
+    fun moveToNextWord() {
+        if (!_uiState.value.isGameOver) {
+            updateGameState(0)
         }
     }
 

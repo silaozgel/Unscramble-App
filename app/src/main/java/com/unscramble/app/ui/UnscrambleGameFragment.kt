@@ -12,21 +12,21 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.unscramble.app.databinding.FragmentGameBinding
-import com.unscramble.app.viewmodel.GameViewModel
+import com.unscramble.app.databinding.FragmentUnscrambleGameBinding
+import com.unscramble.app.viewmodel.UnscrambleGameViewModel
 import kotlinx.coroutines.launch
 
-class GameFragment : Fragment() {
+class UnscrambleGameFragment : Fragment() {
 
-    private var _binding: FragmentGameBinding? = null
+    private var _binding: FragmentUnscrambleGameBinding? = null
     private val binding get() = _binding!!
-    private val viewModel: GameViewModel by viewModels()
+    private val viewModel: UnscrambleGameViewModel by viewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentGameBinding.inflate(inflater, container, false)
+        _binding = FragmentUnscrambleGameBinding.inflate(inflater, container, false)
         return binding.root
     }
 
@@ -43,7 +43,7 @@ class GameFragment : Fragment() {
                     showFinalScoreDialog(uiState.score)
                 } else {
                     binding.tvScrambledWord.text = uiState.currentScrambledWord
-                    binding.tvWordCount.text = "${uiState.currentWordCount} / 20"
+                    binding.tvWordCount.text = "${uiState.currentWordCount} / 20 - ${uiState.difficulty}"
                     binding.tvScore.text = "Skor: ${uiState.score}"
 
                     updateHeartsUI(uiState.lives)
@@ -52,14 +52,20 @@ class GameFragment : Fragment() {
         }
 
         binding.btnSubmit.setOnClickListener {
-            val userGuess = binding.etGuess.text.toString().trim()
-            if (userGuess.isNotEmpty()) {
-                if (viewModel.checkUserGuess(userGuess)) {
-                    binding.textFieldGuess.error = null
-                    binding.etGuess.text?.clear()
-                } else {
-                    binding.textFieldGuess.error = "Yanlış kelime, tekrar dene!"
-                }
+            val guess = binding.etGuess.text.toString()
+
+            val isCorrect = viewModel.checkUserGuess(guess)
+
+            if (isCorrect) {
+                binding.etGuess.text?.clear()
+                binding.textFieldGuess.error = null
+            } else {
+                // Tahmin yanlışsa yeni kelimeye geçer
+                viewModel.moveToNextWord()
+
+                // Ekranı temizler ve varsa eski hataları kaldırır ki yeni soruda temiz görünsün
+                binding.etGuess.text?.clear()
+                binding.textFieldGuess.error = null
             }
         }
 
@@ -84,7 +90,7 @@ class GameFragment : Fragment() {
     }
 
     private fun updateHeartsUI(lives: Int) {
-        val hearts = arrayOf(
+        val hearts = listOf<ImageView>(
             binding.heart1, binding.heart2, binding.heart3,
             binding.heart4, binding.heart5
         )
